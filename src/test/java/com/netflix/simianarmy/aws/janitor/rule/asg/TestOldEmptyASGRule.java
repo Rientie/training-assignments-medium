@@ -68,6 +68,7 @@ public class TestOldEmptyASGRule {
                 new DummyASGInstanceValidator());
         Assert.assertTrue(rule.isValid(resource));
         Assert.assertNull(resource.getExpectedTerminationTime());
+        
     }
 
     @Test

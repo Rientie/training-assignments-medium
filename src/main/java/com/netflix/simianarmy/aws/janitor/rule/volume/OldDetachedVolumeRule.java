@@ -22,10 +22,6 @@ import java.util.Map;
 
 import org.apache.commons.lang.Validate;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.netflix.simianarmy.MonkeyCalendar;
 import com.netflix.simianarmy.Resource;
@@ -39,19 +35,13 @@ import com.netflix.simianarmy.janitor.Rule;
  * certain days. The rule mostly relies on tags on the volume to decide if
  * the volume should be marked.
  */
-public class OldDetachedVolumeRule implements Rule {
-
-    /** The Constant LOGGER. */
-    private static final Logger LOGGER = LoggerFactory.getLogger(OldDetachedVolumeRule.class);
+public class OldDetachedVolumeRule extends VolumeAttachment implements Rule {
 
     private final MonkeyCalendar calendar;
 
     private final int detachDaysThreshold;
 
     private final int retentionDays;
-
-    /** The date format used to print or parse the user specified termination date. **/
-    public static final DateTimeFormatter TERMINATION_DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd");
 
 
     /**
@@ -76,32 +66,11 @@ public class OldDetachedVolumeRule implements Rule {
 
     @Override
     public boolean isValid(Resource resource) {
-        Validate.notNull(resource);
-        if (!resource.getResourceType().name().equals("EBS_VOLUME")) {
-            return true;
-        }
-        if (!"available".equals(((AWSResource) resource).getAWSResourceState())) {
-            return true;
-        }
-        String janitorTag = resource.getTag(JanitorMonkey.JANITOR_TAG);
-        if (janitorTag != null) {
-            if ("donotmark".equals(janitorTag)) {
-                LOGGER.info(String.format("The volume %s is tagged as not handled by Janitor",
-                        resource.getId()));
-                return true;
-            }
-            try {
-                // Owners can tag the volume with a termination date in the "janitor" tag.
-                Date userSpecifiedDate = new Date(
-                        TERMINATION_DATE_FORMATTER.parseDateTime(janitorTag).getMillis());
-                resource.setExpectedTerminationTime(userSpecifiedDate);
-                resource.setTerminationReason(String.format("User specified termination date %s", janitorTag));
-                return false;
-            } catch (Exception e) {
-                LOGGER.error(String.format("The janitor tag is not a user specified date: %s", janitorTag));
-            }
-        }
-
+    	Boolean volumeIsTagged = volumeIsTagged(resource);
+    	if (volumeIsTagged != null) {
+    		return volumeIsTagged;
+    	}
+    	
         String janitorMetaTag = resource.getTag(JanitorMonkey.JANITOR_META_TAG);
         if (janitorMetaTag == null) {
             LOGGER.info(String.format("Volume %s is not tagged with the Janitor meta information, ignore.",

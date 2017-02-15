@@ -194,7 +194,8 @@ public class VolumeTaggingMonkey extends Monkey {
                 owner = existingOwner;
             }
             if (needsUpdate(janitorMetadata, owner, instanceId, lastDetachTime)) {
-                Event evt = updateJanitorMetaTag(volume, instanceId, owner, lastDetachTime, awsClient);
+            	String meta = makeMetaTag(instanceId, owner, lastDetachTime);
+            	Event evt = updateJanitorMetaTag(volume, meta, awsClient);
                 if (evt != null) {
                     context().recorder().recordEvent(evt);
                 }
@@ -257,9 +258,11 @@ public class VolumeTaggingMonkey extends Monkey {
         return config.getStrOrElse("simianarmy.volumeTagging.ownerEmailDomain", "");
     }
 
-    private Event updateJanitorMetaTag(Volume volume, String instance, String owner, Date lastDetachTime,
-                                       AWSClient awsClient) {
-        String meta = makeMetaTag(instance, owner, lastDetachTime);
+    /*private Event updateJanitorMetaTag(Volume volume, String instance, String owner, Date lastDetachTime,
+                                       AWSClient awsClient) {*/
+    private Event updateJanitorMetaTag(Volume volume, String meta,
+            AWSClient awsClient) {
+        //String meta = makeMetaTag(instance, owner, lastDetachTime);
         Map<String, String> janitorTags = new HashMap<String, String>();
         janitorTags.put(JanitorMonkey.JANITOR_META_TAG, meta);
         LOGGER.info(String.format("Setting tag %s to '%s' for volume %s",
